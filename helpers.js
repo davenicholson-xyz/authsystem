@@ -19,6 +19,7 @@ module.exports.createJWT = (userid, secret) => {
 };
 
 module.exports.requireAuth = (req, res, next) => {
+  console.log("why am i never used");
   if (req.auth.token) {
     jwt.verify(req.auth.token, req.auth.secret, (err, decodedToken) => {
       if (err) {
@@ -35,9 +36,11 @@ module.exports.requireAuth = (req, res, next) => {
 
 module.exports.parseCookies = (cookie_string) => {
   let cookies = {};
-  cookie_string.split(";").forEach((c) => {
-    let ck = c.split("=");
-    cookies[ck[0].trim()] = ck[1];
-  });
+  if (cookie_string) {
+    cookie_string.split(";").forEach((c) => {
+      let ck = c.split("=");
+      cookies[ck[0].trim()] = ck[1];
+    });
+  }
   return cookies;
 };

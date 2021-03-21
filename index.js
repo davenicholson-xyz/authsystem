@@ -1,7 +1,7 @@
 const express = require("express");
 const { authError } = require("./errors");
-const { encryptPassword, createJWT, checkPassword, parseCookies } = require("./helpers");
-const router = express.Router();
+const { encryptPassword, createJWT, checkPassword, parseCookies, requireAuth } = require("./helpers");
+const auth_router = express.Router();
 const jwt = require("jsonwebtoken");
 
 module.exports.authsystem = (model, options = {}) => {
@@ -13,6 +13,7 @@ module.exports.authsystem = (model, options = {}) => {
       secret: "secretkey",
       maxAge: 3600000,
       redirect: "/",
+      static: { pages: ["secret"] },
     };
 
     req.auth = {
@@ -44,9 +45,16 @@ module.exports.authsystem = (model, options = {}) => {
       req.app.locals.user = null;
     }
 
-    router.get("/", (req, res) => res.json({ default: "true" }));
+    let root = options.static.root || "./public";
+    for (let route of options.static.pages) {
+      req.app.get(`/${route}`, requireAuth, (req, res, next) => {
+        res.sendFile(`${route}.html`, { root });
+      });
+    }
 
-    router.post("/register", async (req, res, next) => {
+    auth_router.get("/", (req, res) => res.json({ default: "true" }));
+
+    auth_router.post("/register", async (req, res, next) => {
       req.body.password = req.body.password || "";
       try {
         const user = await model.create(req.body);
@@ -60,7 +68,7 @@ module.exports.authsystem = (model, options = {}) => {
       }
     });
 
-    router.post("/signin", async (req, res, next) => {
+    auth_router.post("/signin", async (req, res, next) => {
       try {
         const user = await model.findOne({}).where(options.user_field, req.body[options.user_field]);
         if (user) {
@@ -80,12 +88,12 @@ module.exports.authsystem = (model, options = {}) => {
       }
     });
 
-    router.get("/signout", (req, res, next) => {
+    auth_router.get("/signout", (req, res, next) => {
       res.cookie("access_token", null, { httpOnly: true, maxAge: 0 });
       res.redirect("/");
     });
 
-    req.app.use("/auth", router);
+    req.app.use("/auth", auth_router);
 
     // req.app.use((err, req, res, next) => {
     //   res.json({ error: err });
