@@ -34,11 +34,9 @@ module.exports.requireAuth = (req, res, next) => {
 };
 
 module.exports.parseCookies = (cookie_string) => {
-  let cArray = cookie_string.split(";");
   let cookies = {};
-  cArray.forEach((c) => {
+  cookie_string.split(";").forEach((c) => {
     let ck = c.split("=");
-    let co = {};
     cookies[ck[0].trim()] = ck[1];
   });
   return cookies;
