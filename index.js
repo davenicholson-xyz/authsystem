@@ -1,7 +1,9 @@
+const path = require("path");
 const express = require("express");
 const { authError } = require("./errors");
 const { encryptPassword, createJWT, checkPassword, parseCookies, requireAuth } = require("./helpers");
 const auth_router = express.Router();
+const static_router = express.Router();
 const jwt = require("jsonwebtoken");
 
 module.exports.authsystem = (model, options = {}) => {
@@ -9,11 +11,15 @@ module.exports.authsystem = (model, options = {}) => {
     req.app.use(express.json());
 
     options = {
-      user_field: "email",
-      secret: "secretkey",
-      maxAge: 3600000,
-      redirect: "/",
-      static: { pages: ["secret"] },
+      user_field: options.user_field || "email",
+      secret: options.secret || "secretkey",
+      maxAge: options.maxAge || 3600000,
+      redirect: options.redirect || "/",
+      static: {
+        root: options.static.root || "./public",
+        pages: options.static.pages || [],
+      },
+      middleware: options.middleware || [],
     };
 
     req.auth = {
@@ -45,11 +51,20 @@ module.exports.authsystem = (model, options = {}) => {
       req.app.locals.user = null;
     }
 
-    let root = options.static.root || "./public";
+    let root = options.static.root;
     for (let route of options.static.pages) {
       req.app.get(`/${route}`, requireAuth, (req, res, next) => {
+        console.log("getting secure static file...", route);
         res.sendFile(`${route}.html`, { root });
       });
+      req.app.get(`/${route}.html`, requireAuth, (req, res, next) => {
+        console.log("getting secure static file...", route);
+        res.sendFile(`${route}.html`, { root });
+      });
+    }
+
+    for (let middle of options.middleware) {
+      req.app.use(middle);
     }
 
     auth_router.get("/", (req, res) => res.json({ default: "true" }));
@@ -94,6 +109,7 @@ module.exports.authsystem = (model, options = {}) => {
     });
 
     req.app.use("/auth", auth_router);
+    req.app.use(static_router);
 
     // req.app.use((err, req, res, next) => {
     //   res.json({ error: err });

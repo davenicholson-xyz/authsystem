@@ -7,8 +7,6 @@ module.exports.encryptPassword = async (clearPassword) => {
   return epassword;
 };
 
-//
-
 module.exports.checkPassword = async (clearpassword, password) => {
   const checked = await compare(clearpassword, password);
   return checked;
@@ -19,7 +17,6 @@ module.exports.createJWT = (userid, secret) => {
 };
 
 module.exports.requireAuth = (req, res, next) => {
-  console.log("why am i never used");
   if (req.auth.token) {
     jwt.verify(req.auth.token, req.auth.secret, (err, decodedToken) => {
       if (err) {
@@ -29,7 +26,7 @@ module.exports.requireAuth = (req, res, next) => {
       }
     });
   } else {
-    console.log("Unauthorized... no JWT set");
+    console.error("Unauthorized... no JWT set");
     res.redirect(req.auth.redirect);
   }
 };
